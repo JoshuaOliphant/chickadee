@@ -20,8 +20,8 @@ This project analyzes ChatGPT conversations to extract and refine prompts, provi
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/chatgpt-conversation-analysis.git
-   cd chatgpt-conversation-analysis
+   git clone https://github.com/yourusername/chickadee.git
+   cd chickadee
    ```
 
 2. Install dependencies using Poetry:
