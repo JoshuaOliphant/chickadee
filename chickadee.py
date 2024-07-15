@@ -285,16 +285,18 @@ async def main():
 
 
 def write_prompts_to_file(prompts: List[Prompt], file_path: str):
-    with open(file_path, "w") as f:
-        for i, prompt in enumerate(prompts, 1):
-            f.write(f"Prompt {i}:\n")
-            f.write(f"Role: {prompt.role}\n")
-            f.write(f"Instructions: {prompt.instructions}\n")
-            f.write(f"Steps: {prompt.steps}\n")
-            f.write(f"End Goal: {prompt.end_goal}\n")
-            f.write(f"Narrowing: {prompt.narrowing}\n")
-            f.write(f"Reasoning: {prompt.reasoning}\n\n")
-    logfire.info(f"Generated prompts written to {file_path}")
+    try:
+        with open(file_path, "w") as f:
+            for i, prompt in enumerate(prompts, 1):
+                f.write(f"Prompt {i}:\n")
+                f.write(f"Role: {prompt.role}\n")
+                f.write(f"Instructions: {prompt.instructions}\n")
+                f.write(f"Steps: {prompt.steps}\n")
+                f.write(f"End Goal: {prompt.end_goal}\n")
+                f.write(f"Narrowing: {prompt.narrowing}\n")
+                f.write(f"Reasoning: {prompt.reasoning}\n\n")
+    except IOError as e:
+        logfire.error(f"Failed to write prompts to file {file_path}: {str(e)}")
 
 
 if __name__ == "__main__":
