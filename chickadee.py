@@ -20,15 +20,13 @@ encoding = tiktoken.encoding_for_model("gpt-4o")
 
 
 class Prompt(BaseModel):
-    role: str = Field(..., description="Define the AI's role")
-    instructions: str = Field(..., description="Provide clear instructions")
-    steps: str = Field(..., description="Outline specific steps")
-    end_goal: str = Field(..., description="State the goal and audience")
-    narrowing: str = Field(..., description="Add constraints")
-    reasoning: str = Field(
-        ...,
-        description="Explanation of the thought process behind creating this prompt",
+    role: str = Field("default_role", description="Define the AI's role")
+    instructions: str = Field(
+        "default_instructions", description="Provide clear instructions"
     )
+    steps: str = Field("default_steps", description="Outline specific steps")
+    end_goal: str = Field("default_end_goal", description="State the goal and audience")
+    narrowing: str = Field("default_narrowing", description="Add constraints")
 
 
 class AnalysisResult(BaseModel):
