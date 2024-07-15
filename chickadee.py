@@ -20,7 +20,11 @@ encoding = tiktoken.encoding_for_model("gpt-4o")
 
 
 class Prompt(BaseModel):
-    content: str = Field(..., description="The content of the generated prompt")
+    role: str = Field(..., description="Define the AI's role")
+    instructions: str = Field(..., description="Provide clear instructions")
+    steps: str = Field(..., description="Outline specific steps")
+    end_goal: str = Field(..., description="State the goal and audience")
+    narrowing: str = Field(..., description="Add constraints")
     reasoning: str = Field(
         ...,
         description="Explanation of the thought process behind creating this prompt",
@@ -77,7 +81,7 @@ async def analyze_questions_chunk(questions: List[str]) -> AnalysisResult:
     prompt = f"""
     Role: You are an Expert Prompt Engineer specializing in analyzing user queries and creating reusable, high-quality prompts for language models.
 
-    Task: Analyze the following list of questions from ChatGPT conversations and create reusable prompts based on your analysis.
+    Task: Analyze the following list of questions from ChatGPT conversations and create reusable prompts based on your analysis using the RISEN framework.
 
     Questions to analyze:
     {questions}
@@ -86,27 +90,31 @@ async def analyze_questions_chunk(questions: List[str]) -> AnalysisResult:
     1. Identify common themes and patterns across the questions.
     2. Create 3-5 general, widely applicable prompts that address these themes.
     3. For each prompt, provide a brief explanation of your thought process.
+    4. Structure each prompt using the RISEN framework:
+       - R — Role: Define the AI's role.
+       - I — Instructions: Provide clear instructions.
+       - S — Steps: Outline specific steps.
+       - E — End goal: State the goal and audience.
+       - N — Narrowing: Add constraints.
 
     Output:
-    Provide your analysis and generated prompts in a structured format with 'analysis' and 'prompts' sections. Each prompt should have 'content' and 'reasoning' fields.
+    Provide your analysis and generated prompts in a structured format with 'analysis' and 'prompts' sections. Each prompt should have 'role', 'instructions', 'steps', 'end_goal', 'narrowing', and 'reasoning' fields.
     """
 
-    question_count = len(questions)
-    logfire.info(f"Sending request to OpenAI API {question_count}")
+    logfire.info(f"Sending request to OpenAI API {len(questions)}")
     response = await client.chat.completions.create(
         model="gpt-4o",
         response_model=AnalysisResult,
         messages=[
             {
                 "role": "system",
-                "content": "You are an Expert Prompt Engineer with extensive experience in analyzing user queries and creating high-quality, reusable prompts for language models.",
+                "content": "You are an Expert Prompt Engineer with extensive experience in analyzing user queries and creating high-quality, reusable prompts for language models using the RISEN framework.",
             },
             {"role": "user", "content": prompt},
         ],
     )
     logfire.info("Received response from OpenAI API")
-    prompt_count = len(response.prompts)
-    logfire.info(f"Analysis result {prompt_count}")
+    logfire.info(f"Analysis result {len(response.prompts)}")
     return response
 
 
@@ -124,7 +132,7 @@ async def aggregate_results(all_results: List[AnalysisResult]) -> AnalysisResult
     prompt = f"""
     Role: You are an AI Aggregator and Refiner, specializing in consolidating and improving AI-generated content.
 
-    Task: Review and refine the following set of prompts generated from multiple analyses of user questions. Your goal is to eliminate redundancy, combine similar prompts, and create a concise, high-quality set of reusable prompts.
+    Task: Review and refine the following set of prompts generated from multiple analyses of user questions. Your goal is to eliminate redundancy, combine similar prompts, and create a concise, high-quality set of reusable prompts using the RISEN framework.
 
     Prompts to refine:
     {json.dumps([prompt.dict() for prompt in combined_prompts], indent=2)}
@@ -134,7 +142,13 @@ async def aggregate_results(all_results: List[AnalysisResult]) -> AnalysisResult
     2. Combine similar prompts into more general, widely applicable versions.
     3. Eliminate redundancy while preserving unique insights.
     4. Ensure each refined prompt is clear, concise, and effective.
-    5. Provide a brief explanation for each refined prompt, highlighting its purpose and applicability.
+    5. Structure each refined prompt using the RISEN framework:
+       - R — Role: Define the AI's role.
+       - I — Instructions: Provide clear instructions.
+       - S — Steps: Outline specific steps.
+       - E — End goal: State the goal and audience.
+       - N — Narrowing: Add constraints.
+    6. Provide a brief explanation for each refined prompt, highlighting its purpose and applicability.
 
     Output:
     You MUST provide your output in the following JSON structure:
@@ -142,14 +156,18 @@ async def aggregate_results(all_results: List[AnalysisResult]) -> AnalysisResult
         "analysis": "Your overall analysis of the prompts and refinement process",
         "prompts": [
             {{
-                "content": "The content of the refined prompt",
+                "role": "The AI's role",
+                "instructions": "Clear instructions",
+                "steps": "Specific steps",
+                "end_goal": "Goal and audience",
+                "narrowing": "Constraints",
                 "reasoning": "Your explanation for this refined prompt"
             }},
             // ... more prompts ...
         ]
     }}
 
-    Ensure that your response can be parsed as valid JSON with 'analysis' and 'prompts' fields, where 'prompts' is a list of objects each containing 'content' and 'reasoning' fields.
+    Ensure that your response can be parsed as valid JSON with 'analysis' and 'prompts' fields, where 'prompts' is a list of objects each containing 'role', 'instructions', 'steps', 'end_goal', 'narrowing', and 'reasoning' fields.
     """
 
     logfire.info("Sending aggregation request to OpenAI API")
@@ -160,18 +178,16 @@ async def aggregate_results(all_results: List[AnalysisResult]) -> AnalysisResult
             messages=[
                 {
                     "role": "system",
-                    "content": "You are an AI Aggregator and Refiner with expertise in consolidating and improving AI-generated content. Always provide your response in the requested JSON structure.",
+                    "content": "You are an AI Aggregator and Refiner with expertise in consolidating and improving AI-generated content using the RISEN framework. Always provide your response in the requested JSON structure.",
                 },
                 {"role": "user", "content": prompt},
             ],
         )
         logfire.info("Received aggregation response from OpenAI API")
-        refined_prompt_count = len(response.prompts)
-        logfire.info(f"Aggregation result: {refined_prompt_count} refined prompts")
+        logfire.info(f"Aggregation result: {len(response.prompts)} refined prompts")
         return response
     except Exception as e:
         logfire.error(f"Error in aggregation: {str(e)}")
-        # Fallback to a basic structure if the model fails to provide the correct format
         return AnalysisResult(
             analysis="Error in aggregating results. Please check the logs for more information.",
             prompts=[],
@@ -272,7 +288,11 @@ def write_prompts_to_file(prompts: List[Prompt], file_path: str):
     with open(file_path, "w") as f:
         for i, prompt in enumerate(prompts, 1):
             f.write(f"Prompt {i}:\n")
-            f.write(f"Content: {prompt.content}\n")
+            f.write(f"Role: {prompt.role}\n")
+            f.write(f"Instructions: {prompt.instructions}\n")
+            f.write(f"Steps: {prompt.steps}\n")
+            f.write(f"End Goal: {prompt.end_goal}\n")
+            f.write(f"Narrowing: {prompt.narrowing}\n")
             f.write(f"Reasoning: {prompt.reasoning}\n\n")
     logfire.info(f"Generated prompts written to {file_path}")
 
